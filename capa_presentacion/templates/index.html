@@ -2,62 +2,75 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>SGV-APS Saraguro</title>
+    <meta http-equiv="refresh" content="10"> <title>SGV-APS Saraguro</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f0f2f5; max-width: 1000px; margin: auto; }
-        h1, h2 { color: #2c3e50; border-bottom: 2px solid #e67e22; padding-bottom: 5px; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; max-width: 1100px; margin: auto; }
         .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px; }
-        .evento-card { background: #fff3e0; border-left: 5px solid #e67e22; padding: 10px; margin-bottom: 10px; }
-        .alert { background: #d4edda; color: #155724; padding: 10px; margin-bottom: 15px; border-radius: 5px; }
-        button { background: #27ae60; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; }
-        select, input { padding: 5px; }
+        .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ddd; }
+        .estado-Pendiente { color: orange; font-weight: bold; }
+        .estado-Enviado { color: blue; font-weight: bold; }
+        .estado-Entregado { color: green; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        button { background: #d35400; color: white; border: none; padding: 5px 10px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h1>🧵 Sistema Artesanal Saraguro (SGV-APS)</h1>
-    
-    {% if mensaje %} <div class="alert">{{ mensaje }}</div> {% endif %}
+    <h1>🧵 Sistema Artesanal Saraguro</h1>
+    {% if mensaje %} <div style="background:#d4edda; padding:10px; color:green;">{{ mensaje }}</div> {% endif %}
 
     <div class="grid">
         <div>
-            <h2>📦 Catálogo de Ventas</h2>
+            <h2>🛒 Realizar Pedido</h2>
             {% for p in productos %}
             <div class="card">
-                <h3>{{ p.nombre }} <small>({{ p.tipo }})</small></h3>
-                <p>Artesana: <strong>{{ p.artesana }}</strong> | Stock: {{ p.stock }} | <span style="color:#e67e22; font-weight:bold;">${{ p.precio }}</span></p>
-                
+                <strong>{{ p.nombre }}</strong> (${{ p.precio }}) | Stock: {{ p.stock }}
                 {% if p.stock > 0 %}
-                <form action="/comprar" method="POST" style="display:flex; gap:10px; align-items:center;">
+                <form action="/comprar" method="POST" style="margin-top:10px;">
                     <input type="hidden" name="id" value="{{ p.id }}">
-                    Cant: <input type="number" name="cantidad" value="1" min="1" max="{{ p.stock }}" style="width:40px;">
-                    Pago: 
+                    <input type="number" name="cantidad" value="1" min="1" max="{{ p.stock }}" style="width:40px;">
+                    
+                    <select name="tipo_cliente">
+                        <option value="Turista">Turista</option>
+                        <option value="Local">Local</option>
+                    </select>
+                    
                     <select name="pago">
                         <option value="Efectivo">Efectivo</option>
-                        <option value="Transferencia">Transferencia</option>
                         <option value="Tarjeta">Tarjeta</option>
                     </select>
-                    <button type="submit">Generar Pedido</button>
+                    
+                    <button type="submit">Comprar</button>
                 </form>
-                {% else %}
-                <button disabled style="background:grey;">Agotado</button>
-                {% endif %}
+                {% else %} <span style="color:red;">Agotado</span> {% endif %}
             </div>
             {% endfor %}
         </div>
 
         <div>
-            <h2>🎉 Eventos y Ferias</h2>
-            <p>Promoviendo nuestra cultura.</p>
+            <h2>🎉 Eventos</h2>
             {% for e in eventos %}
-            <div class="evento-card">
-                <strong>{{ e.nombre }}</strong><br>
-                📅 {{ e.fecha }} <br>
-                📍 {{ e.lugar }}
-                {% if e.destacado %} <br>⭐ <em>Evento Destacado</em> {% endif %}
+            <div class="card" style="background:#fff3cd;">
+                <strong>{{ e.nombre }}</strong><br>{{ e.fecha }} - {{ e.lugar }}
             </div>
             {% endfor %}
         </div>
     </div>
+
+    <h2>📦 Seguimiento de Pedidos (Simulación)</h2>
+    <p><small><em>La página se recarga cada 10s. El estado cambia automáticamente: Pendiente -> Enviado -> Entregado.</em></small></p>
+    <table>
+        <tr><th>ID</th><th>Producto</th><th>Cliente</th><th>Pago</th><th>Total</th><th>Estado</th></tr>
+        {% for ped in pedidos %}
+        <tr>
+            <td>{{ ped.id }}</td>
+            <td>{{ ped.prod }}</td>
+            <td>{{ ped.cliente }}</td>
+            <td>{{ ped.pago }}</td>
+            <td>${{ ped.total }}</td>
+            <td class="estado-{{ ped.estado }}">{{ ped.estado }}</td>
+        </tr>
+        {% endfor %}
+    </table>
 </body>
 </html>
