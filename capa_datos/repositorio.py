@@ -2,13 +2,9 @@ import mysql.connector
 
 class RepositorioArtesanias:
     def __init__(self):
-        # Configuración de conexión
         self.config = {
-            'user': 'root',          
-            'password': 'UTPL2023',          
-            'host': 'localhost',
-            'database': 'sistema_sarag', 
-            'port': 3306
+            'user': 'root', 'password': 'UTPL2023', 'host': 'localhost',
+            'database': 'sistema_sarag', 'port': 3306
         }
         self._inicializar_db()
 
@@ -20,48 +16,89 @@ class RepositorioArtesanias:
             conn = self._get_connection()
             cursor = conn.cursor()
             
-            # Crear tabla si no existe
+            # 1. Tabla Productos
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS productos (
                     id INT AUTO_INCREMENT PRIMARY KEY,
-                    nombre VARCHAR(100),
-                    tipo VARCHAR(50),
-                    precio DECIMAL(10, 2),
-                    stock INT,
-                    artesana VARCHAR(100)
+                    nombre VARCHAR(100), tipo VARCHAR(50), precio DECIMAL(10, 2), stock INT, artesana VARCHAR(100)
                 )
             """)
             
-            # Insertar datos de prueba si la tabla está vacía
+            # 2. Tabla Pedidos (NUEVO)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS pedidos (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    producto_nombre VARCHAR(100),
+                    cantidad INT,
+                    total DECIMAL(10,2),
+                    metodo_pago VARCHAR(50),
+                    estado VARCHAR(50),
+                    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            # 3. Tabla Eventos (NUEVO)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS eventos (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    nombre VARCHAR(150),
+                    fecha VARCHAR(50),
+                    lugar VARCHAR(100),
+                    destacado BOOLEAN
+                )
+            """)
+            
+            # Datos Semilla Productos
             cursor.execute("SELECT count(*) FROM productos")
             if cursor.fetchone()[0] == 0:
-                sql = "INSERT INTO productos (nombre, tipo, precio, stock, artesana) VALUES (%s, %s, %s, %s, %s)"
-                datos = [
+                sql_prod = "INSERT INTO productos (nombre, tipo, precio, stock, artesana) VALUES (%s, %s, %s, %s, %s)"
+                datos_prod = [
                     ('Collar Chakana', 'Collar', 25.00, 10, 'María Saraguro'),
-                    ('Aretes de Mullos', 'Aretes', 12.50, 20, 'Juana Quizhpe'),
-                    ('Manilla Tejida', 'Manilla', 8.00, 15, 'Rosa Gualán')
+                    ('Aretes Mullos', 'Aretes', 12.50, 20, 'Juana Quizhpe'),
+                    ('Poncho Tradicional', 'Vestimenta', 150.00, 5, 'Luis Macas')
                 ]
-                cursor.executemany(sql, datos)
-                conn.commit()
-            
+                cursor.executemany(sql_prod, datos_prod)
+
+            # Datos Semilla Eventos (NUEVO)
+            cursor.execute("SELECT count(*) FROM eventos")
+            if cursor.fetchone()[0] == 0:
+                sql_evt = "INSERT INTO eventos (nombre, fecha, lugar, destacado) VALUES (%s, %s, %s, %s)"
+                datos_evt = [
+                    ('Feria de Integración Saraguro', '20-Oct-2025', 'Plaza Central', True),
+                    ('Expo Artesanías Ancestrales', '05-Nov-2025', 'Centro Cultural', False)
+                ]
+                cursor.executemany(sql_evt, datos_evt)
+
+            conn.commit()
             cursor.close()
             conn.close()
-        except mysql.connector.Error as err:
-            print(f"Error en BD: {err}")
+        except Exception as e:
+            print(f"Error DB: {e}")
 
-    def obtener_todos(self):
-        conn = self._get_connection()
-        cursor = conn.cursor()
+    # --- MÉTODOS DE PRODUCTOS ---
+    def obtener_productos(self):
+        conn = self._get_connection(); cursor = conn.cursor()
         cursor.execute("SELECT * FROM productos")
-        resultados = cursor.fetchall()
-        cursor.close()
+        res = cursor.fetchall()
         conn.close()
-        return resultados
+        return res
 
     def reducir_stock(self, id_producto, cantidad):
-        conn = self._get_connection()
-        cursor = conn.cursor()
+        conn = self._get_connection(); cursor = conn.cursor()
         cursor.execute("UPDATE productos SET stock = stock - %s WHERE id = %s", (cantidad, id_producto))
-        conn.commit()
-        cursor.close()
+        conn.commit(); conn.close()
+
+    # --- MÉTODOS DE PEDIDOS (NUEVO) ---
+    def registrar_pedido(self, prod_nombre, cantidad, total, pago):
+        conn = self._get_connection(); cursor = conn.cursor()
+        sql = "INSERT INTO pedidos (producto_nombre, cantidad, total, metodo_pago, estado) VALUES (%s, %s, %s, %s, 'Pendiente')"
+        cursor.execute(sql, (prod_nombre, cantidad, total, pago))
+        conn.commit(); conn.close()
+
+    # --- MÉTODOS DE EVENTOS (NUEVO) ---
+    def obtener_eventos(self):
+        conn = self._get_connection(); cursor = conn.cursor()
+        cursor.execute("SELECT * FROM eventos")
+        res = cursor.fetchall()
         conn.close()
+        return res

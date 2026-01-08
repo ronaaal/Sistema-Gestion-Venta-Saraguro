@@ -5,37 +5,26 @@ class ServicioVentas:
         self.repo = RepositorioArtesanias()
 
     def obtener_catalogo(self):
-        datos_crudos = self.repo.obtener_todos()
-        lista_productos = []
-        
-        # Transformamos tuplas a diccionarios para que el HTML entienda
-        for p in datos_crudos:
-            lista_productos.append({
-                "id": p[0],
-                "nombre": p[1],
-                "tipo": p[2],
-                "precio": float(p[3]),
-                "stock": p[4],
-                "artesana": p[5]
-            })
-        return lista_productos
+        datos = self.repo.obtener_productos()
+        return [{"id": p[0], "nombre": p[1], "tipo": p[2], "precio": float(p[3]), "stock": p[4], "artesana": p[5]} for p in datos]
 
-    def realizar_venta(self, id_producto, cantidad):
+    def obtener_eventos(self):
+        # Lógica de Promoción: Traer eventos para mostrar cultura
+        datos = self.repo.obtener_eventos()
+        return [{"id": e[0], "nombre": e[1], "fecha": e[2], "lugar": e[3], "destacado": e[4]} for e in datos]
+
+    def realizar_venta(self, id_producto, cantidad, metodo_pago="Efectivo"):
         catalogo = self.obtener_catalogo()
         producto = next((p for p in catalogo if p["id"] == int(id_producto)), None)
 
-        # Reglas de Negocio
-        if not producto:
-            return "Error: Producto no existe."
-        
-        if cantidad <= 0:
-            return "Error: La cantidad debe ser mayor a 0."
-            
-        if producto["stock"] < cantidad:
-            return f"Error: Stock insuficiente. Solo quedan {producto['stock']}."
+        if not producto or producto["stock"] < cantidad:
+            return "Error: Stock insuficiente o producto no encontrado."
 
-        # Si pasa las reglas, llamamos a Datos para actualizar
+        # 1. Actualizar Stock
         self.repo.reducir_stock(id_producto, cantidad)
-        total = producto["precio"] * cantidad
         
-        return f"¡Éxito! Compra realizada por ${total:.2f}. Gracias por apoyar el arte Saraguro."
+        # 2. Registrar el Pedido (Requisito nuevo)
+        total = producto["precio"] * cantidad
+        self.repo.registrar_pedido(producto["nombre"], cantidad, total, metodo_pago)
+        
+        return f"Pedido Registrado: {cantidad}x {producto['nombre']} | Estado: Pendiente | Total: ${total:.2f}"

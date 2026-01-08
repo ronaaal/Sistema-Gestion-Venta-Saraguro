@@ -6,19 +6,23 @@ gestor = ServicioVentas()
 
 @app.route('/')
 def inicio():
+    # Ahora traemos productos Y eventos
     productos = gestor.obtener_catalogo()
-    return render_template('index.html', productos=productos)
+    eventos = gestor.obtener_eventos()
+    return render_template('index.html', productos=productos, eventos=eventos)
 
 @app.route('/comprar', methods=['POST'])
 def procesar_compra():
     id_prod = int(request.form['id'])
     cant = int(request.form['cantidad'])
+    pago = request.form['pago'] # Capturamos forma de pago
     
-    mensaje = gestor.realizar_venta(id_prod, cant)
+    mensaje = gestor.realizar_venta(id_prod, cant, pago)
     
-    # Recargamos la página con los datos actualizados
+    # Recargar todo
     productos = gestor.obtener_catalogo()
-    return render_template('index.html', productos=productos, mensaje=mensaje)
+    eventos = gestor.obtener_eventos()
+    return render_template('index.html', productos=productos, eventos=eventos, mensaje=mensaje)
 
 def main():
     app.run(debug=True, port=5000)
